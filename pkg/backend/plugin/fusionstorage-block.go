@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	log "github.com/golang/glog"
-	volUtil "k8s.io/kubernetes/pkg/volume/util"
 
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/device"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/protocol"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/storage/fusionstorage/attacher"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/storage/fusionstorage/client"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/storage/fusionstorage/volume"
+	"github.com/Huawei/eSDK_K8S_Plugin/pkg/utils"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/utils/pwd"
 )
 
@@ -100,7 +100,7 @@ func (p *FusionStorageSanPlugin) Init(config, parameters map[string]interface{})
 func (p *FusionStorageSanPlugin) getParams(name string, parameters map[string]interface{}) (map[string]interface{}, error) {
 	params := map[string]interface{}{
 		"name":     name,
-		"capacity": volUtil.RoundUpSize(parameters["size"].(int64), CAPACITY_UNIT),
+		"capacity": utils.RoundUpSize(parameters["size"].(int64), CAPACITY_UNIT),
 	}
 
 	paramKeys := []string{

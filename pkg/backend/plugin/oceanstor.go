@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	log "github.com/golang/glog"
-	volUtil "k8s.io/kubernetes/pkg/volume/util"
 
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/storage/oceanstor/client"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/utils"
@@ -94,7 +93,7 @@ func (p *OceanstorPlugin) getParams(name string, parameters map[string]interface
 	params := map[string]interface{}{
 		"name":        name,
 		"description": "Created from Kubernetes CSI",
-		"capacity":    volUtil.RoundUpSize(parameters["size"].(int64), 512),
+		"capacity":    utils.RoundUpSize(parameters["size"].(int64), 512),
 	}
 
 	paramKeys := []string{
