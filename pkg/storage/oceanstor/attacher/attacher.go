@@ -7,8 +7,8 @@ import (
 
 	log "github.com/golang/glog"
 
-	"github.com/Huawei/eSDK_K8S_Plugin/pkg/device"
-	"github.com/Huawei/eSDK_K8S_Plugin/pkg/protocol"
+	dev "github.com/Huawei/eSDK_K8S_Plugin/pkg/device"
+	proto "github.com/Huawei/eSDK_K8S_Plugin/pkg/protocol"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/storage/oceanstor/client"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/utils"
 )
@@ -235,6 +235,10 @@ Add_TO_MAPPING:
 	return nil
 }
 
+func (p *Attacher) attachDirect(lunName string, parameters map[string]interface{}) error {
+	return nil
+}
+
 func (p *Attacher) attachISCSI(hostID string, parameters map[string]interface{}) error {
 	ports, err := p.cli.GetIscsiTgtPort()
 	if err != nil {
@@ -455,6 +459,33 @@ func (p *Attacher) NodeStage(lunName string, parameters map[string]interface{}) 
 		return "", err
 	}
 
+	if p.protocol == "direct" {
+		lun, err := p.cli.GetLunByName(lunName)
+		if err != nil {
+			msg := fmt.Sprintf("attachDirect: get lun %s error: %v", lunName, err)
+			log.Errorln(msg)
+			return "", errors.New(msg)
+		}
+		if lun == nil {
+			msg := fmt.Sprintf("attachDirect: lun %s not exist for attaching", lunName)
+			log.Errorln(msg)
+			return "", errors.New(msg)
+		}
+
+		lunID := lun["ID"].(string)
+		output, err := utils.ExecShellCmd("/OSM/bin/diagsh --attach='app_data_12' --cmd='lun regPmsLun %s'", lunID)
+		if err != nil {
+			log.Errorf("regPmsLun failed for lun with id %s, error: %s", lunID, output)
+			return "", err
+		}
+		devPath := fmt.Sprintf("/dev/%s_%s", lunName, lunID)
+		if exist, _ := utils.PathExist(devPath); !exist {
+			return "", fmt.Errorf("lun device detection failed for %s", devPath)
+		}
+
+		return devPath, nil
+	}
+
 	device := dev.ScanDev(wwn, p.protocol)
 	if device == "" {
 		msg := fmt.Sprintf("Cannot detect device %s", wwn)
@@ -477,6 +508,33 @@ func (p *Attacher) NodeUnstage(lunName string, parameters map[string]interface{}
 		return nil
 	}
 
+	if p.protocol == "direct" {
+		lun, err := p.cli.GetLunByName(lunName)
+		if err != nil {
+			msg := fmt.Sprintf("attachDirect: get lun %s error: %v", lunName, err)
+			log.Errorln(msg)
+			return errors.New(msg)
+		}
+		if lun == nil {
+			msg := fmt.Sprintf("attachDirect: lun %s not exist for attaching", lunName)
+			log.Errorln(msg)
+			return errors.New(msg)
+		}
+
+		lunID := lun["ID"].(string)
+		output, err := utils.ExecShellCmd("/OSM/bin/diagsh --attach='app_data_12' --cmd='lun unregPmsLun %s'", lunID)
+		if err != nil {
+			log.Errorf("unregPmsLun failed for lun with id %s, error: %s", lunID, output)
+			return err
+		}
+		devPath := fmt.Sprintf("/dev/%s_%s", lunName, lunID)
+		if exist, _ := utils.PathExist(devPath); exist {
+			return fmt.Errorf("lun device deletion failed for %s", devPath)
+		}
+
+		return nil
+	}
+
 	err = dev.DeleteDev(wwn)
 	if err != nil {
 		log.Errorf("Delete dev %s error: %v", wwn, err)
@@ -495,6 +553,8 @@ func (p *Attacher) ControllerAttach(lunName string, parameters map[string]interf
 
 	if p.protocol == "iscsi" {
 		err = p.attachISCSI(hostID, parameters)
+	} else if p.protocol == "direct" {
+		err = p.attachDirect(lunName, parameters)
 	} else {
 		err = p.attachFC(hostID, parameters)
 	}

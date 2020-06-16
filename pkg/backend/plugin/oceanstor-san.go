@@ -8,8 +8,8 @@ import (
 
 	log "github.com/golang/glog"
 
-	"github.com/Huawei/eSDK_K8S_Plugin/pkg/device"
-	"github.com/Huawei/eSDK_K8S_Plugin/pkg/protocol"
+	dev "github.com/Huawei/eSDK_K8S_Plugin/pkg/device"
+	proto "github.com/Huawei/eSDK_K8S_Plugin/pkg/protocol"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/storage/oceanstor/attacher"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/storage/oceanstor/client"
 	"github.com/Huawei/eSDK_K8S_Plugin/pkg/storage/oceanstor/volume"
@@ -38,8 +38,8 @@ func (p *OceanstorSanPlugin) NewPlugin() Plugin {
 
 func (p *OceanstorSanPlugin) Init(config, parameters map[string]interface{}) error {
 	protocol, exist := parameters["protocol"].(string)
-	if !exist || (protocol != "iscsi" && protocol != "fc") {
-		return errors.New("protocol must be provided as 'iscsi' or 'fc' for oceanstor-san backend")
+	if !exist || (protocol != "iscsi" && protocol != "fc" && protocol != "direct") {
+		return errors.New("protocol must be provided as 'iscsi', 'fc' or 'direct' for oceanstor-san backend")
 	}
 
 	if protocol == "iscsi" {

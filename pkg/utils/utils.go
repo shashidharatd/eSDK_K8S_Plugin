@@ -44,11 +44,11 @@ func ExecShellCmd(format string, args ...interface{}) (string, error) {
 }
 
 func GetLunName(name string) string {
-	if len(name) <= 31 {
+	if len(name) <= 22 {
 		return name
 	}
 
-	return name[:31]
+	return name[:22]
 }
 
 func GetFusionStorageLunName(name string) string {
